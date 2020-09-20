@@ -23,16 +23,17 @@ def test_autocommit_update_misses_rows():
     # update of socks with 10 hits to +1 the hits. Thus we should get
     # num_sock/2 with 11 hits. However, we get exactly 0
 
-    num_socks = 50000
+    num_socks = 500000
 
     def create():
         Sock.objects.all().delete()
-        for i in range(0, num_socks):
-            Sock.objects.create(
+        Sock.objects.bulk_create((
+            Sock(
                 id_a=i, id_b=i,
                 hits=9 if i % 2 == 0 else 10,
                 colour='black' if i % 2 == 0 else 'white',
-            )
+            ) for i in range(0, num_socks)
+        ))
 
     create_thread = threading.Thread(target=create)
     create_thread.start()
@@ -46,7 +47,10 @@ def test_autocommit_update_misses_rows():
 
     def update_with_10_hits():
         barrier.wait()
-        time.sleep(0.0001)  # Enough so the other query starts first
+        # Enough yields so the other query starts first, but hopefully not
+        # too many so it finishes before this one starts
+        for _ in range(0, 100):
+            time.sleep(0)
         Sock.objects.filter(hits=10).update(hits=F('hits')+1)
 
     update_all_thread = threading.Thread(target=update_all)
