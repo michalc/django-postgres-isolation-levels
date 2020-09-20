@@ -13,8 +13,10 @@ django.setup()
 
 import threading
 import random
+import time
 import pytest
 from django.db import DatabaseError
+from django.db.models import F
 
 from app.models import Sock
 
@@ -73,3 +75,56 @@ def test_autocommit_update_deadlock():
     assert len(exceptions) > 0
     assert isinstance(exceptions[0], DatabaseError)
     assert 'deadlock' in exceptions[0].args[0]
+
+
+@pytest.mark.django_db
+def test_autocommit_update_misses_rows():
+    # We construct a situation where from a "committed" view of the database,
+    # we always have num_socks/2 socks with 10 hits. We run a concurrent
+    # update of socks with 10 hits to +1 the hits. Thus we should get
+    # num_sock/2 with 11 hits. However, we get exactly 0
+
+    num_socks = 50000
+
+    def create():
+        Sock.objects.all().delete()
+        for i in range(0, num_socks):
+            Sock.objects.create(
+                id_a=i, id_b=i,
+                hits=9 if i % 2 == 0 else 10,
+                colour='black' if i % 2 == 0 else 'white',
+            )
+
+    create_thread = threading.Thread(target=create)
+    create_thread.start()
+    create_thread.join()
+
+    barrier = threading.Barrier(2)
+
+    def update_all():
+        barrier.wait()
+        Sock.objects.all().update(hits=F('hits')+1)
+
+    def update_with_10_hits():
+        barrier.wait()
+        time.sleep(0.0001)  # Enough so the other query starts first
+        Sock.objects.filter(hits=10).update(hits=F('hits')+1)
+
+    update_all_thread = threading.Thread(target=update_all)
+    update_all_thread.start()
+    update_with_10_hits_thead = threading.Thread(target=update_with_10_hits)
+    update_with_10_hits_thead.start()
+
+    update_all_thread.join()
+    update_with_10_hits_thead.join()
+
+    num_11 = None
+    def fetch_hits():
+        nonlocal num_11
+        num_11 = Sock.objects.filter(hits=11).count()
+
+    fetch_hits_thread = threading.Thread(target=fetch_hits)
+    fetch_hits_thread.start()
+    fetch_hits_thread.join()
+
+    assert num_11 == 0
