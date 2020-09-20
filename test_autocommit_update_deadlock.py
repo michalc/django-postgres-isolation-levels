@@ -1,9 +1,6 @@
 ##############
 # Setup Django
 
-import os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'app.settings'
-
 import django
 django.setup()
 
