@@ -20,9 +20,6 @@ from app.models import Sock
 def test_autocommit_update_deadlock():
     # We make a deadlock likely by updating the same rows, but in a way where
     # Postgres is likely to lock them in conflicting orders
-    #
-    # We do all database access in separate threads so they are not in the
-    # transaction that pytest starts
 
     num_threads = 50
     ids = list(range(0, 1000))
