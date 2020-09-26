@@ -19,9 +19,9 @@ from app.models import Sock
 @pytest.mark.django_db
 def test_autocommit_update_misses_rows():
     # We construct a situation where from a "committed" view of the database,
-    # we always have num_socks/2 socks with 10 hits. We run a concurrent
-    # update of socks with 10 hits to +1 the hits. Thus we should get
-    # num_sock/2 with 11 hits. However, we get exactly 0
+    # we always have num_socks/2 socks with 10 hits. We run an update of
+    # socks with 10 hits to +1 the hits, thus we should get num_socks/2
+    # affectted rows. However, due to a concurrent update, we get exactly 0
 
     num_socks = 500000
 
@@ -43,12 +43,14 @@ def test_autocommit_update_misses_rows():
 
     def update_all():
         barrier.wait()
-        time.sleep(0.5)
         Sock.objects.all().update(hits=F('hits')+1)
 
+    num_affected = None
     def update_with_10_hits():
+        nonlocal num_affected
         barrier.wait()
-        Sock.objects.filter(hits=10).update(hits=F('hits')+1)
+        time.sleep(0.5)
+        num_affected = Sock.objects.filter(hits=10).update(hits=F('hits')+1)
 
     update_all_thread = threading.Thread(target=update_all)
     update_all_thread.start()
@@ -58,13 +60,4 @@ def test_autocommit_update_misses_rows():
     update_all_thread.join()
     update_with_10_hits_thead.join()
 
-    num_11 = None
-    def fetch_hits():
-        nonlocal num_11
-        num_11 = Sock.objects.filter(hits=11).count()
-
-    fetch_hits_thread = threading.Thread(target=fetch_hits)
-    fetch_hits_thread.start()
-    fetch_hits_thread.join()
-
-    assert num_11 == 0
+    assert num_affected == 0
