@@ -43,14 +43,11 @@ def test_autocommit_update_misses_rows():
 
     def update_all():
         barrier.wait()
+        time.sleep(0.5)
         Sock.objects.all().update(hits=F('hits')+1)
 
     def update_with_10_hits():
         barrier.wait()
-        # Enough yields so the other query starts first, but hopefully not
-        # too many so it finishes before this one starts
-        for _ in range(0, 100):
-            time.sleep(0)
         Sock.objects.filter(hits=10).update(hits=F('hits')+1)
 
     update_all_thread = threading.Thread(target=update_all)
