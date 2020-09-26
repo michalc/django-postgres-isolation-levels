@@ -18,11 +18,10 @@ from app.models import Sock
 
 @pytest.mark.django_db
 def test_autocommit_update_misses_rows():
-    # We construct a situation where from a "committed" view of the database,
-    # we always have num_socks/2 socks with 10 hits. We run an update of
-    # socks with 10 hits to +1 the hits, thus we would expect to get
-    # num_socks/2 affected rows. However, due to a concurrent update, we get
-    # exactly 0.
+    # We construct a situation where committed in the database, we always have
+    # num_socks/2 socks with 10 hits. We run an update of socks with 10 hits
+    # to +1 the hits. Thus we would expect to get num_socks/2 affected rows.
+    # However, due to a concurrent update, we get exactly 0.
 
     num_socks = 500000
 
