@@ -8,4 +8,4 @@ until PGPASSWORD=password psql -h localhost -U postgres -d postgres -c "select 1
 done
 
 ./manage.py migrate
-DJANGO_SETTINGS_MODULE=app.settings pytest
+DJANGO_SETTINGS_MODULE=app.settings pytest $@
