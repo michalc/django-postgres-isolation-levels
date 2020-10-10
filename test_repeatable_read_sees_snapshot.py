@@ -18,7 +18,7 @@ from app.models import Sock
 
 
 @pytest.mark.django_db
-def test_read_committed_sees_snapshots():
+def test_read_committed_sees_snapshot():
     def create():
         Sock.objects.all().delete()
         Sock.objects.create(id_a=1, id_b=1, colour='black')
