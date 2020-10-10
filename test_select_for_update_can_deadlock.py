@@ -35,10 +35,10 @@ def test_select_for_update_can_deadlock():
         nonlocal caught
         try:
             with transaction.atomic():
-                Sock.objects.filter(id_a=1).update(colour='white')
+                list(Sock.objects.select_for_update().filter(id_a=1))
                 barrier_1.wait()
                 barrier_2.wait()
-                Sock.objects.filter(id_a=2).update(colour='black')
+                list(Sock.objects.select_for_update().filter(id_a=2))
         except Exception as exception:
             caught = exception
 
@@ -47,9 +47,9 @@ def test_select_for_update_can_deadlock():
         try:
             with transaction.atomic():
                 barrier_1.wait()
-                Sock.objects.filter(id_a=2).update(colour='black')
+                list(Sock.objects.select_for_update().filter(id_a=2))
                 barrier_2.wait()
-                Sock.objects.filter(id_a=1).update(colour='white')
+                list(Sock.objects.select_for_update().filter(id_a=1))
         except Exception as exception:
             caught = exception
 
