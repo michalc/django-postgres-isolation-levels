@@ -17,7 +17,7 @@ from app.models import Sock
 
 
 @pytest.mark.django_db
-def test_repeatable_read_can_fail():
+def test_repeatable_read_fails_if_updating_same_rows():
     def create():
         Sock.objects.all().delete()
         Sock.objects.create(id_a=1, id_b=1, colour='black')
