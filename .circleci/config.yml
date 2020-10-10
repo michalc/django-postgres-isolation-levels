@@ -4,8 +4,6 @@ jobs:
     docker:
       - image: python:3.8.3
       - image: postgres:10.1
-        environment:
-          POSTGRES_PASSWORD: password
     steps:
       - checkout
       - run:
